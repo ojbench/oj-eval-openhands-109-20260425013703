@@ -17,7 +17,7 @@ int main() {
         }
     }
     
-    // dp[i][j] = number of ways to connect nodes from i to j (inclusive) in a valid way
+    // dp[i][j] = number of ways to connect nodes i to j (inclusive) in a valid way
     // where the connections are non-crossing and respect the allowed constraints
     // We consider the nodes in a linear order from i to j (not wrapping around)
     vector<vector<long long>> dp(n, vector<long long>(n, 0));
@@ -32,40 +32,62 @@ int main() {
         for (int i = 0; i < n - len; i++) {
             int j = i + len;
             
-            // Case 1: node i is not connected to any node
-            dp[i][j] = dp[i+1][j];
-            
-            // Case 2: node i is connected to some node k (i < k <= j)
-            for (int k = i+1; k <= j; k++) {
-                if (allowed[i][k]) {
-                    // When connecting i to k, the nodes are divided into two independent parts:
-                    // 1. Nodes between i and k (i+1 to k-1)
-                    // 2. Nodes between k and j (k+1 to j)
-                    long long left = (k > i+1) ? dp[i+1][k-1] : 1;  // If no nodes between i and k, there's 1 way (empty)
-                    long long right = (k < j) ? dp[k+1][j] : 1;     // If no nodes between k and j, there's 1 way (empty)
-                    dp[i][j] = (dp[i][j] + left * right) % MOD;
+            // We'll try all possible ways to connect node i
+            // Either i is not connected, or i is connected to some node k (i < k <= j)
+            for (int k = i; k <= j; k++) {
+                // If k == i, it means i is not connected to any node in [i+1,j]
+                // If k > i, it means i is connected to k
+                if (k == i) {
+                    // i is not connected to any node in [i+1,j]
+                    // So we just solve for [i+1,j]
+                    if (i+1 <= j) {
+                        dp[i][j] = (dp[i][j] + dp[i+1][j]) % MOD;
+                    } else {
+                        dp[i][j] = (dp[i][j] + 1) % MOD;
+                    }
+                } else {
+                    // i is connected to k
+                    if (allowed[i][k]) {
+                        // When connecting i to k, the nodes are divided into two independent parts:
+                        // 1. Nodes between i and k (i+1 to k-1)
+                        // 2. Nodes between k and j (k+1 to j)
+                        long long left = (k > i+1) ? dp[i+1][k-1] : 1;
+                        long long right = (k < j) ? dp[k+1][j] : 1;
+                        dp[i][j] = (dp[i][j] + left * right) % MOD;
+                    }
                 }
             }
         }
     }
     
-    // For the circular case, we need to consider all possible ways to break the circle
-    // We fix node 0 and consider whether it's connected to any other node
+    // For the circular case, we need to count the number of non-crossing spanning trees
+    // We can use the following approach:
+    // Fix an edge from node 0 to node k, which divides the circle into two arcs
     long long result = 0;
     
-    // Case 1: node 0 is not connected to any node
-    // Then we have a linear chain from 1 to n-1
-    result = dp[1][n-1];
-    
-    // Case 2: node 0 is connected to some node k (1 <= k <= n-1)
-    for (int k = 1; k < n; k++) {
-        if (allowed[0][k]) {
-            // When connecting 0 to k, the circle is divided into two independent regions:
-            // 1. Nodes from 1 to k-1 (if any)
-            // 2. Nodes from k+1 to n-1 (if any)
-            long long left = (k > 1) ? dp[1][k-1] : 1;      // Region 1
-            long long right = (k < n-1) ? dp[k+1][n-1] : 1; // Region 2
-            result = (result + left * right) % MOD;
+    if (n == 1) {
+        result = 1;
+    } else {
+        // For n > 1, we consider all possible edges from node 0 to node k (1 <= k < n)
+        for (int k = 1; k < n; k++) {
+            if (allowed[0][k]) {
+                // Edge from 0 to k divides the circle into two arcs:
+                // Arc 1: nodes 1 to k-1
+                // Arc 2: nodes k+1 to n-1
+                long long ways = 1;
+                
+                // Count ways for arc 1
+                if (k > 1) {
+                    ways = (ways * dp[1][k-1]) % MOD;
+                }
+                
+                // Count ways for arc 2
+                if (k < n-1) {
+                    ways = (ways * dp[k+1][n-1]) % MOD;
+                }
+                
+                result = (result + ways) % MOD;
+            }
         }
     }
     
