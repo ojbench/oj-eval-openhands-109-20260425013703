@@ -32,19 +32,14 @@ int main() {
         for (int i = 0; i < n - len; i++) {
             int j = i + len;
             
-            // We'll try all possible ways to connect node i
-            // Either i is not connected, or i is connected to some node k (i < k <= j)
+            // Try all possible ways to connect node i to some node k (i <= k <= j)
+            // If k == i, it means i is not connected to any node in [i+1,j]
+            // If k > i, it means i is connected to k
             for (int k = i; k <= j; k++) {
-                // If k == i, it means i is not connected to any node in [i+1,j]
-                // If k > i, it means i is connected to k
                 if (k == i) {
                     // i is not connected to any node in [i+1,j]
                     // So we just solve for [i+1,j]
-                    if (i+1 <= j) {
-                        dp[i][j] = (dp[i][j] + dp[i+1][j]) % MOD;
-                    } else {
-                        dp[i][j] = (dp[i][j] + 1) % MOD;
-                    }
+                    dp[i][j] = (dp[i][j] + dp[i+1][j]) % MOD;
                 } else {
                     // i is connected to k
                     if (allowed[i][k]) {
@@ -62,13 +57,14 @@ int main() {
     
     // For the circular case, we need to count the number of non-crossing spanning trees
     // We can use the following approach:
-    // Fix an edge from node 0 to node k, which divides the circle into two arcs
+    // The answer is the sum over all possible edges from node 0 to node k (1 <= k < n)
+    // that are allowed, multiplied by the ways to connect the remaining nodes
     long long result = 0;
     
     if (n == 1) {
         result = 1;
     } else {
-        // For n > 1, we consider all possible edges from node 0 to node k (1 <= k < n)
+        // For n > 1, consider all possible edges from node 0 to node k (1 <= k < n)
         for (int k = 1; k < n; k++) {
             if (allowed[0][k]) {
                 // Edge from 0 to k divides the circle into two arcs:
